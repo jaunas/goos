@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include "screen.h"
 #include "../kernel/ports.h"
 #include "../kernel/mem.h"
@@ -26,8 +28,8 @@ int handle_scrolling(int cursor_offset)
   int i;
   for (i=1; i<MAX_ROWS; i++) {
     memory_copy(
-      (char*)(get_screen_offset(0, i) + VIDEO_ADDRESS),
-      (char*)(get_screen_offset(0, i-1) + VIDEO_ADDRESS),
+      (uint16_t*)(get_screen_offset(0, i) + VIDEO_ADDRESS),
+      (uint16_t*)(get_screen_offset(0, i-1) + VIDEO_ADDRESS),
       MAX_COLS*2
     );
   }

@@ -1,23 +1,26 @@
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h)
-OBJ = ${C_SOURCES:.c=.o}
+CC = gcc
+CFLAGS = -m64 -mcmodel=kernel -ffreestanding -nostdlib -mno-red-zone -fno-pie -c
 
-all: os-image.bin
+C_SOURCES = $(wildcard source/kernel/*.c source/drivers/*.c)
+HEADERS = $(wildcard source/kernel/*.h source/drivers/*.h)
+OBJS = ${C_SOURCES:.c=.o} tools/boot.o
 
-os-image.bin: boot/boot_sector.bin kernel/kernel.bin
-	cat $^ > $@
+ISO := os.iso
+OUTPUT := tools/iso/boot/kernel.sys
 
-kernel/kernel.bin: kernel/kernel_entry.o ${OBJ}
-	ld -o $@ -Ttext 0x1000 $^ --oformat binary -melf_i386
+all: $(ISO)
+
+$(ISO): $(OUTPUT)
+	grub-mkrescue -o $@ tools/iso
+
+$(OUTPUT): $(OBJS) tools/linker.ld
+	ld -nodefaultlibs -T tools/linker.ld -o $@ $(OBJS)
+
+.s.o:
+	nasm -felf64 $< -o $@
 
 %.o: %.c ${HEADERS}
-	gcc -ffreestanding -march=i386 -m32 -fno-pie -c $< -o $@
-
-%.o: %.asm
-	nasm $< -f elf -o $@
-
-%.bin: %.asm
-	nasm $< -f bin -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) boot/*.bin kernel/*.bin kernel/*.o drivers/*.o os-image.bin
+	$(RM) $(OBJS) $(OUTPUT) $(ISO)
